@@ -1,9 +1,9 @@
-// api/proxy.js
 export default async function handler(req, res) {
-    // Enable CORS for your Nexudus domain
-    res.setHeader('Access-Control-Allow-Origin', 'https://tradespace2360.spaces.nexudus.com');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    // Set comprehensive CORS headers
+    res.setHeader('Access-Control-Allow-Origin', '*'); // Allow all origins for now
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
+    res.setHeader('Access-Control-Allow-Headers', 'X-Requested-With, Content-Type, Authorization');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
 
     // Handle preflight OPTIONS request
     if (req.method === 'OPTIONS') {
@@ -11,14 +11,12 @@ export default async function handler(req, res) {
         return;
     }
 
-    // Get table name from query (e.g., ?table=Members)
     const { table } = req.query;
     
     if (!table) {
         return res.status(400).json({ error: 'Table parameter required' });
     }
 
-    // Your Airtable credentials - these will be set as environment variables
     const AIRTABLE_TOKEN = process.env.AIRTABLE_TOKEN;
     const AIRTABLE_BASE_ID = process.env.AIRTABLE_BASE_ID;
 
@@ -27,10 +25,8 @@ export default async function handler(req, res) {
     }
 
     try {
-        // Build Airtable URL
         const url = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${table}`;
         
-        // Prepare fetch options
         const fetchOptions = {
             method: req.method,
             headers: {
@@ -39,16 +35,14 @@ export default async function handler(req, res) {
             }
         };
 
-        // Add body for POST requests
         if (req.method === 'POST' && req.body) {
             fetchOptions.body = JSON.stringify(req.body);
         }
 
-        // Forward the request to Airtable
         const response = await fetch(url, fetchOptions);
         const data = await response.json();
-
-        // Return the response
+        
+        // Forward the response with proper status
         res.status(response.status).json(data);
         
     } catch (error) {
