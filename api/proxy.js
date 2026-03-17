@@ -1,9 +1,11 @@
+// api/proxy.js
 export default async function handler(req, res) {
-    // Set comprehensive CORS headers
-    res.setHeader('Access-Control-Allow-Origin', '*'); // Allow all origins for now
+    // Set CORS headers for ALL responses (including errors)
+    res.setHeader('Access-Control-Allow-Origin', 'https://tradespace2360.spaces.nexudus.com');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
     res.setHeader('Access-Control-Allow-Headers', 'X-Requested-With, Content-Type, Authorization');
     res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Access-Control-Max-Age', '86400');
 
     // Handle preflight OPTIONS request
     if (req.method === 'OPTIONS') {
@@ -21,11 +23,13 @@ export default async function handler(req, res) {
     const AIRTABLE_BASE_ID = process.env.AIRTABLE_BASE_ID;
 
     if (!AIRTABLE_TOKEN || !AIRTABLE_BASE_ID) {
+        console.error('Missing credentials');
         return res.status(500).json({ error: 'Airtable credentials not configured' });
     }
 
     try {
         const url = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${table}`;
+        console.log(`Proxying to: ${url}`);
         
         const fetchOptions = {
             method: req.method,
@@ -35,14 +39,14 @@ export default async function handler(req, res) {
             }
         };
 
-        if (req.method === 'POST' && req.body) {
+        if (req.method !== 'GET' && req.body) {
             fetchOptions.body = JSON.stringify(req.body);
         }
 
         const response = await fetch(url, fetchOptions);
         const data = await response.json();
-        
-        // Forward the response with proper status
+
+        // CORS headers already set at the top
         res.status(response.status).json(data);
         
     } catch (error) {
